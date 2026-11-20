@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pet Care Billing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4efe6; --panel:#fffdf9; --ink:#24302b; --muted:#6c7570; --line:#e3dccf;
+  --accent:#2f5d50; --accent-2:#e7f0ec; --warm:#c9773b; --warm-2:#fbeee3; --danger:#b4462f;
+  --r:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header.top{display:flex;align-items:center;gap:16px;padding:14px 22px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.brand{font-family:Fraunces,serif;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+.brand .paw{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center}
+nav.tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:10px}
+nav.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:7px;cursor:pointer;font-weight:600;color:var(--muted)}
+nav.tabs button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:var(--panel);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:#cfc6b6}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#264d42}
+.btn.warm{background:var(--warm);border-color:var(--warm);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.sm{padding:5px 9px;font-size:13px}
+.btn:disabled{opacity:.55;cursor:default}
+.icon-btn{border:0;background:transparent;cursor:pointer;color:var(--muted);padding:4px 6px;border-radius:6px}
+.icon-btn:hover{background:#f1e9dc;color:var(--danger)}
+
+main{padding:22px;max-width:1500px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:1100px){.layout{grid-template-columns:minmax(0,1fr)}.preview-wrap{position:static}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card + .card{margin-top:16px}
+.card h3{margin:0 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+label.f.full{grid-column:1/-1}
+input.in,select.in,textarea.in{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 10px;width:100%;min-width:0;color:var(--ink);font-size:14px}
+input.in:focus,select.in:focus,textarea.in:focus{outline:2px solid var(--accent-2);border-color:var(--accent)}
+textarea.in{resize:vertical;min-height:84px}
+
+/* items editor */
+.items{width:100%;border-collapse:collapse}
+.items th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:0 6px 6px;font-weight:600}
+.items td{padding:4px 3px;vertical-align:middle;border-top:1px solid #f0eadf}
+.items input.in,.items select.in{padding:6px 7px;font-size:13px;min-width:0;width:100%}
+.items input[type=date]{width:128px}
+.items td.opt{width:100%}
+.items .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding:0 6px}
+.hol{display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;user-select:none;padding:4px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+.hol.on{background:var(--warm-2);border-color:#efc9a8;color:#8a4b1e;font-weight:600}
+.hol input{display:none}
+.item-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.hint{font-size:12px;color:var(--muted)}
+@media (max-width:760px){
+  .items thead{display:none}
+  .items tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+  .items td{border:0;padding:0}
+  .items td.opt{grid-column:1/-1}
+  .items input[type=date]{width:100%}
+  .items .num{text-align:left}
+}
+
+.totals-edit{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.adj{display:grid;grid-template-columns:110px minmax(0,1fr) 92px 130px;gap:8px;align-items:end;margin-bottom:10px}
+.adj .ttl{font-weight:600;font-size:13px;padding-bottom:9px}
+.seg{display:flex;background:var(--bg);border-radius:8px;padding:3px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;padding:6px 0;border-radius:6px;cursor:pointer;font-weight:700;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+@media (max-width:640px){.adj{grid-template-columns:1fr 92px 1fr}.adj .ttl{grid-column:1/-1;padding:0}}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+
+/* preview */
+.preview-wrap{position:sticky;top:84px}
+.preview-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.preview-bar .t{font-weight:700;margin-right:auto}
+.paper-scroller{overflow:auto;border-radius:var(--r);box-shadow:0 10px 30px rgba(60,45,20,.12)}
+
+/* the invoice itself (also used for export) */
+.paper{background:#fff;color:#22302a;width:100%;min-width:600px;padding:44px 48px 40px;font-family:Inter,sans-serif;font-size:13px;line-height:1.45}
+.paper .p-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:22px;border-bottom:3px solid var(--accent)}
+.paper .p-title{font-family:Fraunces,serif;font-size:30px;font-weight:700;letter-spacing:.02em;color:var(--accent);margin:0;line-height:1.1}
+.paper .p-sub{color:#7a817d;margin-top:4px;font-size:12px}
+.paper .p-meta{text-align:right;font-size:12.5px}
+.paper .p-meta div{display:flex;justify-content:flex-end;gap:14px}
+.paper .p-meta span{color:#7a817d;min-width:80px;text-align:right}
+.paper .p-meta b{min-width:96px;text-align:right;font-weight:600}
+.paper .p-bill{display:flex;gap:30px;margin:22px 0 24px}
+.paper .p-bill .lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a817d;font-weight:600;margin-bottom:5px}
+.paper .p-bill .name{font-size:16px;font-weight:700}
+.paper .p-bill .muted{color:#56605b;white-space:pre-line}
+.paper table.p-items{width:100%;border-collapse:collapse}
+.paper table.p-items th{background:var(--accent);color:#fff;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;text-align:left;padding:8px 9px;font-weight:600}
+.paper table.p-items th:first-child{border-radius:6px 0 0 6px}
+.paper table.p-items th:last-child{border-radius:0 6px 6px 0}
+.paper table.p-items td{padding:8px 9px;border-bottom:1px solid #ece6db;vertical-align:top}
+.paper table.p-items tr:nth-child(even) td{background:#faf7f1}
+.paper .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.paper .svc{font-weight:600}
+.paper .svc-d{color:#6f7772;font-size:11.5px}
+.paper .tag{display:inline-block;background:var(--warm-2);color:#8a4b1e;border-radius:10px;padding:1px 7px;font-size:10.5px;font-weight:600}
+.paper .p-foot{display:flex;gap:28px;margin-top:26px;align-items:flex-start}
+.paper .notes{flex:1;background:#faf7f1;border-radius:10px;padding:14px 16px;white-space:pre-line;color:#45504a;font-size:12.5px}
+.paper .notes .lbl,.paper .sum .lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a817d;font-weight:600;margin-bottom:6px;display:block}
+.paper .sum{width:270px}
+.paper .sum .row{display:flex;justify-content:space-between;padding:5px 0;font-variant-numeric:tabular-nums}
+.paper .sum .row.disc b{color:var(--danger)}
+.paper .sum .due{margin-top:8px;background:var(--accent);color:#fff;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+.paper .sum .due span{font-size:11px;letter-spacing:.1em;font-weight:700}
+.paper .sum .due b{font-size:20px;font-family:Fraunces,serif}
+.paper .thanks{text-align:center;margin-top:30px;color:#8a908c;font-size:11.5px}
+.paper .empty{padding:26px;text-align:center;color:#999}
+
+/* rates */
+.rates{width:100%;border-collapse:collapse}
+.rates th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+.rates td{padding:5px 4px;border-bottom:1px solid #f0eadf}
+.rates input.in,.rates select.in{padding:6px 8px;font-size:13px}
+.rates .w-num{width:110px}
+.rate-group td{background:var(--accent-2);font-weight:700;color:var(--accent);padding:7px 8px;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+.inp-affix{position:relative}
+.inp-affix span{position:absolute;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+.inp-affix .pre{left:8px}.inp-affix .post{right:8px}
+.inp-affix .pre + input{padding-left:18px}
+.inp-affix input.has-post{padding-right:22px}
+
+/* saved list */
+.saved-list{display:flex;flex-direction:column;gap:8px}
+.saved{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.saved .who{font-weight:700}
+.saved .meta{color:var(--muted);font-size:12px}
+.saved .amt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;background:rgba(30,30,25,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);border-radius:14px;max-width:min(900px,96vw);max-height:92vh;overflow:auto;padding:18px}
+.modal img{max-width:100%;display:block;border:1px solid var(--line);border-radius:8px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:60;font-weight:500}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#exportStage{position:fixed;left:-10000px;top:0;width:816px}
+#exportStage .paper{min-width:0;width:816px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><div class="paw"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><circle cx="5.5" cy="10" r="2.3"/><circle cx="9.5" cy="5.5" r="2.3"/><circle cx="14.5" cy="5.5" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M12 11c-3.3 0-6.5 4.7-6.5 7.2 0 1.8 1.5 2.6 3.2 2.6 1.4 0 2.2-.7 3.3-.7s1.9.7 3.3.7c1.7 0 3.2-.8 3.2-2.6C18.5 15.7 15.3 11 12 11z"/></svg></div>Pet Care Billing</div>
+  <nav class="tabs">
+    <button data-view="invoice" class="on">Invoice</button>
+    <button data-view="rates">Rate catalog</button>
+    <button data-view="saved">Saved invoices</button>
+  </nav>
+  <div class="spacer"></div>
+  <button class="btn" id="newBtn">＋ New invoice</button>
+  <button class="btn" id="saveBtn">Save invoice</button>
+</header>
+
+<main>
+  <!-- INVOICE -->
+  <section class="view on" id="view-invoice">
+    <div class="layout">
+      <div>
+        <div class="card">
+          <h3>Client</h3>
+          <div class="grid2">
+            <label class="f">Client name<input class="in" data-k="client"></label>
+            <label class="f">Invoice #<input class="in" data-k="number"></label>
+            <label class="f">Email<input class="in" data-k="email" type="email"></label>
+            <label class="f">Invoice date<input class="in" data-k="date" type="date"></label>
+            <label class="f">Phone<input class="in" data-k="phone"></label>
+            <label class="f">Due date<input class="in" data-k="due" type="date"></label>
+            <label class="f full">Address<input class="in" data-k="address"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Invoice items</h3>
+          <table class="items">
+            <thead><tr><th>From</th><th>Until</th><th>Rate option</th><th class="num">Qty</th><th class="num">Unit</th><th>Holiday</th><th class="num">Line total</th><th></th></tr></thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+          <div class="item-actions">
+            <button class="btn sm primary" id="addRow">＋ Add row</button>
+            <span class="hint">New rows copy the last row and keep the same date spacing. Qty: drop-ins count days inclusive, boarding counts nights.</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Summary &amp; notes</h3>
+          <div class="adj">
+            <div class="ttl">Surcharge / fee</div>
+            <label class="f">Label<input class="in" data-k="feeLabel" placeholder="Surcharge"></label>
+            <div class="seg" data-seg="feeMode"><button data-v="pct">%</button><button data-v="amt">$</button></div>
+            <label class="f" id="feeValLbl">Value<input class="in" type="number" min="0" step="0.01" data-k="feeVal"></label>
+          </div>
+          <div class="adj">
+            <div class="ttl">Discount</div>
+            <label class="f">Label<input class="in" data-k="discLabel" placeholder="Discount"></label>
+            <div class="seg" data-seg="discMode"><button data-v="pct">%</button><button data-v="amt">$</button></div>
+            <label class="f" id="discValLbl">Value<input class="in" type="number" min="0" step="0.01" data-k="discVal"></label>
+          </div>
+          <p class="hint" style="margin:0 0 10px">Surcharge is added first; a % discount is then taken off subtotal + surcharge. Leave a value at 0 to hide that line.</p>
+          <div class="totals-edit">
+            <label class="check"><input type="checkbox" data-k="card"> Paid by credit card (+3% fee)</label>
+          </div>
+          <label class="f" style="margin-top:14px">Notes (printed on invoice)<textarea class="in" data-k="notes"></textarea></label>
+        </div>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="preview-bar">
+          <span class="t">Preview</span>
+          <button class="btn primary" id="pdfBtn">⤓ Export PDF</button>
+          <button class="btn warm" id="pngBtn">⤓ Export JPG</button>
+        </div>
+        <div class="paper-scroller"><div id="paper" class="paper"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RATES -->
+  <section class="view" id="view-rates">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <h3 style="margin:0">Service options</h3>
+        <span class="hint">Edit base rates here — invoice prices update automatically.</span>
+        <div class="spacer"></div>
+        <button class="btn sm" id="resetRates">Reset to spreadsheet rates</button>
+        <button class="btn sm primary" id="addRate">＋ Add rate</button>
+      </div>
+      <div style="overflow:auto">
+      <table class="rates">
+        <thead><tr><th>Service</th><th>Details</th><th>Billing unit</th><th>Base rate</th><th>Holiday surcharge</th><th></th></tr></thead>
+        <tbody id="ratesBody"></tbody>
+      </table>
+      </div>
+      <p class="hint" style="margin:14px 0 0">Pricing notes: additional cats are +$7 per cat for drop-ins and +$10 per cat for boarding. Holiday surcharges apply only to rows marked Holiday on the invoice.</p>
+    </div>
+  </section>
+
+  <!-- SAVED -->
+  <section class="view" id="view-saved">
+    <div class="card">
+      <h3>Saved invoices</h3>
+      <p class="hint" style="margin-top:-6px">Saved in this browser only.</p>
+      <div class="saved-list" id="savedList"></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="imgModal"><div class="box">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><b style="margin-right:auto" id="imgModalTitle">Invoice image</b><button class="btn sm" id="closeModal">Close</button></div>
+  <p class="hint" id="imgModalHint" style="margin-top:0">On phone: press and hold the image, then choose “Save to Photos” / “Download image”.</p>
+  <img id="imgModalImg" alt="Invoice">
+</div></div>
+<div class="toast" id="toast"></div>
+<div id="exportStage"></div>
+
+<script>
+/* ---------- defaults from Billing.xlsx ---------- */
+const DEFAULT_RATES = (()=>{
+  const r=[], add=(service,details,unit,rate,hol)=>r.push({id:'r'+r.length,service,details,unit,rate,hol});
+  add('Drop-in','1 cat • 30 min • 1–13 visits','per visit',22,10);
+  add('Drop-in','1 cat • 60 min • 1–13 visits','per visit',32,10);
+  add('Drop-in','1 cat • 30 min • 14+ visits','per visit',20,10);
+  add('Drop-in','1 cat • 60 min • 14+ visits','per visit',30,10);
+  add('Drop-in','2 cats • 30 min • 1–13 visits','per visit',29,10);
+  add('Drop-in','2 cats • 60 min • 1–13 visits','per visit',39,10);
+  add('Drop-in','3 cats • 30 min • 1–13 visits','per visit',36,10);
+  add('Drop-in','3 cats • 60 min • 1–13 visits','per visit',46,10);
+  add('Drop-in','2 cats • 30 min • 14+ visits','per visit',27,10);
+  add('Drop-in','2 cats • 60 min • 14+ visits','per visit',37,10);
+  add('Drop-in','3 cats • 30 min • 14+ visits','per visit',34,10);
+  add('Drop-in','3 cats • 60 min • 14+ visits','per visit',44,10);
+  add('Boarding','1 cat • 1–13 nights','per night',25,15);
+  add('Boarding','1 cat • 14+ nights','per night',22,15);
+  add('Boarding','2 cats • 1–13 nights','per night',35,15);
+  add('Boarding','2 cats • 14+ nights','per night',32,15);
+  add('Boarding','3 cats • 1–13 nights','per night',45,15);
+  add('Boarding','3 cats • 14+ nights','per night',42,15);
+  add('Pickup / drop-off','Round trip','per trip',15,0);
+  return r;
+})();
+
+const todayISO = ()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
+const addDays=(iso,n)=>{if(!iso)return '';const [y,m,d]=iso.split('-').map(Number);const t=new Date(Date.UTC(y,m-1,d+n));return t.toISOString().slice(0,10)};
+const dayDiff=(a,b)=>{const p=s=>{const [y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)};return Math.round((p(b)-p(a))/864e5)};
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+function sampleInvoice(){
+  const opt='r4'; // Drop-in | 2 cats • 30 min • 1–13 visits
+  const items=[];
+  for(let i=0;i<13;i++){const d=addDays('2026-12-06',i*2);items.push({id:uid(),from:d,until:d,rate:opt,holiday:i>=10});}
+  return {id:uid(),client:'Wisp @ Tulip',number:'',email:'',phone:'',address:'',date:todayISO(),due:'',items,discMode:'pct',discVal:15,discLabel:'Discount',feeMode:'pct',feeVal:0,feeLabel:'Surcharge',card:false,
+    notes:'Thank you for trusting us with your pet care.\n\nE-transfer: pompommeya@hotmail.com\n\nCredit card accepted: +3%'};
+}
+function blankInvoice(){
+  const s=sampleInvoice();
+  return {...s,id:uid(),client:'',number:nextNumber(),items:[{id:uid(),from:todayISO(),until:todayISO(),rate:'r0',holiday:false}],discMode:'pct',discVal:0,discLabel:'Discount',feeMode:'pct',feeVal:0,feeLabel:'Surcharge',card:false};
+}
+
+/* ---------- storage ---------- */
+const LS={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let rates=LS.get('pcb.rates',null)||structuredClone(DEFAULT_RATES);
+let inv=LS.get('pcb.draft',null)||sampleInvoice();
+let saved=LS.get('pcb.saved',[]);
+function persist(){LS.set('pcb.rates',rates);LS.set('pcb.draft',inv);LS.set('pcb.saved',saved);}
+function nextNumber(){const n=saved.map(s=>parseInt(String(s.number).replace(/\D/g,''))||0);return 'INV-'+String((n.length?Math.max(...n):0)+1).padStart(4,'0')}
+
+/* migrate older saved invoices */
+function normalize(v){
+  if(v.discMode===undefined){v.discMode='pct';v.discVal=v.discountPct??0;v.discLabel='Discount';}
+  if(v.feeMode===undefined){v.feeMode='pct';v.feeVal=0;v.feeLabel='Surcharge';}
+  return v;
+}
+/* ---------- calc (mirrors the Excel formulas) ---------- */
+const rateById=id=>rates.find(r=>r.id===id);
+const rateLabel=r=>r?`${r.service} | ${r.details}`:'';
+function qtyFor(it){
+  const r=rateById(it.rate); if(!it.from||!it.until||!r) return null;
+  const d=dayDiff(it.from,it.until);
+  if(/boarding/i.test(r.service)) return Math.max(0,d);
+  if(/drop-in/i.test(r.service)) return Math.max(0,d+1);
+  return 1;
+}
+function lineFor(it){
+  const r=rateById(it.rate), q=qtyFor(it); if(!r||q===null) return null;
+  const s=it.holiday?(+r.hol||0)/100:0;
+  return {qty:q,price:+r.rate||0,sur:s,total:q*(+r.rate||0)*(1+s)};
+}
+function totals(){
+  const sub=inv.items.reduce((a,it)=>a+(lineFor(it)?.total||0),0);
+  normalize(inv);
+  const sv=+inv.feeVal||0, sur=inv.feeMode==='pct'?sub*sv/100:sv, withSur=sub+sur;
+  const dv=+inv.discVal||0, pct=inv.discMode==='pct'?dv/100:0;
+  const disc=Math.min(withSur, inv.discMode==='pct'?withSur*pct:dv), after=withSur-disc;
+  const fee=inv.card?after*0.03:0;
+  return {sub,pct,disc,sur,fee,due:after+fee};
+}
+const money=n=>'$'+(Math.round(+(n*100).toFixed(6))/100).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate=iso=>{if(!iso)return '—';const [y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'})};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- render: editor ---------- */
+function rateOptionsHTML(sel){
+  const groups={};rates.forEach(r=>(groups[r.service]=groups[r.service]||[]).push(r));
+  return '<option value="">— choose —</option>'+Object.entries(groups).map(([g,rs])=>`<optgroup label="${esc(g)}">${rs.map(r=>`<option value="${r.id}" ${r.id===sel?'selected':''}>${esc(r.details)} — ${money(+r.rate||0)}</option>`).join('')}</optgroup>`).join('');
+}
+function renderFields(){
+  normalize(inv);
+  document.querySelectorAll('[data-seg]').forEach(sg=>sg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===inv[sg.dataset.seg])));
+  setValLabels();
+  document.querySelectorAll('#view-invoice [data-k]').forEach(el=>{
+    const k=el.dataset.k; if(el.type==='checkbox') el.checked=!!inv[k]; else el.value=inv[k]??'';
+  });
+}
+function renderItems(){
+  const tb=document.getElementById('itemsBody');
+  tb.innerHTML=inv.items.map((it,i)=>{
+    const l=lineFor(it);
+    return `<tr data-i="${i}">
+      <td><input class="in" type="date" data-f="from" value="${it.from||''}"></td>
+      <td><input class="in" type="date" data-f="until" value="${it.until||''}"></td>
+      <td class="opt"><select class="in" data-f="rate">${rateOptionsHTML(it.rate)}</select></td>
+      <td class="num" data-o="qty">${l?l.qty:'–'}</td>
+      <td class="num" data-o="price">${l?money(l.price):'–'}</td>
+      <td><label class="hol ${it.holiday?'on':''}"><input type="checkbox" data-f="holiday" ${it.holiday?'checked':''}>${it.holiday?'Holiday':'Not holiday'}</label></td>
+      <td class="num" data-o="total"><b>${l?money(l.total):'–'}</b></td>
+      <td><button class="icon-btn" data-del="${i}" title="Remove row">✕</button></td>
+    </tr>`}).join('');
+}
+function refreshRowOutputs(i){
+  const tr=document.querySelector(`#itemsBody tr[data-i="${i}"]`); if(!tr) return;
+  const l=lineFor(inv.items[i]);
+  tr.querySelector('[data-o=qty]').textContent=l?l.qty:'–';
+  tr.querySelector('[data-o=price]').textContent=l?money(l.price):'–';
+  tr.querySelector('[data-o=total]').innerHTML='<b>'+(l?money(l.total):'–')+'</b>';
+}
+
+function setValLabels(){
+  document.getElementById('discValLbl').firstChild.textContent=inv.discMode==='pct'?'Percent (%)':'Amount ($)';
+  document.getElementById('feeValLbl').firstChild.textContent=inv.feeMode==='pct'?'Percent (%)':'Amount ($)';
+}
+/* ---------- render: invoice paper ---------- */
+function paperHTML(v){
+  const prev=inv; inv=v; // reuse calc helpers
+  const t=totals();
+  const rows=v.items.map(it=>{const l=lineFor(it), r=rateById(it.rate); if(!r||!l) return '';
+    const dates = it.from===it.until?fmtDate(it.from):`${fmtDate(it.from)} – ${fmtDate(it.until)}`;
+    return `<tr><td>${dates}</td><td><div class="svc">${esc(r.service)} ${it.holiday?'<span class="tag">Holiday +'+(+r.hol||0)+'%</span>':''}</div><div class="svc-d">${esc(r.details)}</div></td>
+      <td class="r">${l.qty}</td><td class="r">${money(l.price)}<div class="svc-d">${esc(r.unit)}</div></td><td class="r"><b>${money(l.total)}</b></td></tr>`}).join('');
+  const contact=[v.email,v.phone,v.address].filter(Boolean).map(esc).join('\n');
+  const html=`
+    <div class="p-head">
+      <div><h1 class="p-title">PET CARE INVOICE</h1><div class="p-sub">Cat sitting · drop-in visits · boarding</div></div>
+      <div class="p-meta">
+        <div><span>Invoice #</span><b>${esc(v.number)||'—'}</b></div>
+        <div><span>Invoice date</span><b>${fmtDate(v.date)}</b></div>
+        <div><span>Due date</span><b>${v.due?fmtDate(v.due):'On receipt'}</b></div>
+      </div>
+    </div>
+    <div class="p-bill"><div><div class="lbl">Bill to</div><div class="name">${esc(v.client)||'—'}</div>${contact?`<div class="muted">${contact}</div>`:''}</div></div>
+    <table class="p-items"><thead><tr><th style="width:27%">Date</th><th>Service</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Line total</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5" class="empty">No items yet</td></tr>'}</tbody></table>
+    <div class="p-foot">
+      <div class="notes"><span class="lbl">Notes</span>${esc(v.notes)}</div>
+      <div class="sum"><span class="lbl">Invoice summary</span>
+        <div class="row"><span>Subtotal</span><b>${money(t.sub)}</b></div>
+        ${t.sur?`<div class="row"><span>${esc(v.feeLabel||'Surcharge')}${v.feeMode==='pct'?` (${+(+v.feeVal).toFixed(2)}%)`:''}</span><b>+${money(t.sur)}</b></div>`:''}
+        ${t.disc?`<div class="row disc"><span>${esc(v.discLabel||'Discount')}${v.discMode==='pct'?` (${+(+v.discVal).toFixed(2)}%)`:''}</span><b>−${money(t.disc)}</b></div>`:''}
+        ${v.card?`<div class="row"><span>Credit card fee (3%)</span><b>${money(t.fee)}</b></div>`:''}
+        <div class="due"><span>AMOUNT DUE</span><b>${money(t.due)}</b></div>
+      </div>
+    </div>
+    <div class="thanks">Thank you! 🐾</div>`;
+  inv=prev; return html;
+}
+function renderPaper(){document.getElementById('paper').innerHTML=paperHTML(inv);}
+
+/* ---------- render: rates ---------- */
+function renderRates(){
+  const tb=document.getElementById('ratesBody'); let last=null, h='';
+  rates.forEach((r,i)=>{
+    if(r.service!==last){h+=`<tr class="rate-group"><td colspan="6">${esc(r.service)}</td></tr>`;last=r.service;}
+    h+=`<tr data-ri="${i}">
+      <td><input class="in" data-rf="service" value="${esc(r.service)}"></td>
+      <td><input class="in" data-rf="details" value="${esc(r.details)}"></td>
+      <td><input class="in" data-rf="unit" value="${esc(r.unit)}"></td>
+      <td class="w-num"><div class="inp-affix"><span class="pre">$</span><input class="in" type="number" step="0.5" min="0" data-rf="rate" value="${r.rate}"></div></td>
+      <td class="w-num"><div class="inp-affix"><input class="in has-post" type="number" step="1" min="0" data-rf="hol" value="${r.hol}"><span class="post">%</span></div></td>
+      <td><button class="icon-btn" data-rdel="${i}" title="Delete rate">✕</button></td></tr>`;
+  });
+  tb.innerHTML=h;
+}
+
+/* ---------- render: saved ---------- */
+function renderSaved(){
+  const el=document.getElementById('savedList');
+  if(!saved.length){el.innerHTML='<p class="hint">No saved invoices yet. Use “Save invoice” at the top.</p>';return;}
+  el.innerHTML=saved.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).map(s=>{
+    const prev=inv;inv=s;const t=totals();inv=prev;
+    return `<div class="saved"><div><div class="who">${esc(s.client)||'(no name)'} <span class="meta">· ${esc(s.number)||''}</span></div>
+      <div class="meta">${fmtDate(s.date)} · ${s.items.length} item${s.items.length===1?'':'s'}</div></div>
+      <div class="amt">${money(t.due)}</div>
+      <button class="btn sm" data-open="${s.id}">Open</button><button class="icon-btn" data-sdel="${s.id}" title="Delete">✕</button></div>`}).join('');
+}
+
+function renderAll(){renderFields();renderItems();renderPaper();renderRates();renderSaved();}
+
+/* ---------- events ---------- */
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='view-'+b.dataset.view));
+  if(b.dataset.view==='invoice'){renderItems();renderPaper();}
+  if(b.dataset.view==='saved')renderSaved();
+});
+
+document.getElementById('view-invoice').addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset.k){inv[el.dataset.k]=el.type==='checkbox'?el.checked:(el.type==='number'?el.value:el.value);}
+  else if(el.dataset.f){
+    const i=+el.closest('tr').dataset.i, it=inv.items[i];
+    if(el.dataset.f==='holiday'){it.holiday=el.checked;const lb=el.closest('.hol');lb.classList.toggle('on',el.checked);lb.lastChild.textContent=el.checked?'Holiday':'Not holiday';}
+    else{
+      const old=it[el.dataset.f]; it[el.dataset.f]=el.value;
+      // moving "from" keeps the same length of stay
+      if(el.dataset.f==='from'&&old&&it.until&&el.value){const len=dayDiff(old,it.until);it.until=addDays(el.value,len);el.closest('tr').querySelector('[data-f=until]').value=it.until;}
+    }
+    refreshRowOutputs(i);
+  } else return;
+  renderPaper();persist();
+});
+document.getElementById('view-invoice').addEventListener('change',e=>{if(e.target.dataset.k==='card'){inv.card=e.target.checked;renderPaper();persist();}});
+
+document.querySelectorAll('[data-seg]').forEach(sg=>sg.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  inv[sg.dataset.seg]=b.dataset.v; sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  setValLabels(); renderPaper(); persist();
+}));
+document.getElementById('itemsBody').addEventListener('click',e=>{
+  const d=e.target.closest('[data-del]'); if(!d) return;
+  inv.items.splice(+d.dataset.del,1); renderItems();renderPaper();persist();
+});
+document.getElementById('addRow').onclick=()=>{
+  const n=inv.items.length, last=inv.items[n-1], prev=inv.items[n-2];
+  let it;
+  if(last){
+    const gap=prev&&prev.from&&last.from?dayDiff(prev.from,last.from):(last.from&&last.until?Math.max(1,dayDiff(last.from,last.until)+1):1);
+    it={id:uid(),from:addDays(last.from,gap||1),until:addDays(last.until,gap||1),rate:last.rate,holiday:last.holiday};
+  } else it={id:uid(),from:todayISO(),until:todayISO(),rate:rates[0]?.id||'',holiday:false};
+  inv.items.push(it);renderItems();renderPaper();persist();
+};
+
+document.getElementById('ratesBody').addEventListener('input',e=>{
+  const f=e.target.dataset.rf; if(!f) return;
+  const r=rates[+e.target.closest('tr').dataset.ri];
+  r[f]=(f==='rate'||f==='hol')?(e.target.value===''?0:+e.target.value):e.target.value;
+  persist();
+});
+document.getElementById('ratesBody').addEventListener('change',e=>{if(e.target.dataset.rf==='service')renderRates();});
+document.getElementById('ratesBody').addEventListener('click',e=>{
+  const d=e.target.closest('[data-rdel]'); if(!d) return;
+  const r=rates[+d.dataset.rdel]; const used=inv.items.some(it=>it.rate===r.id);
+  if(used&&!d.dataset.confirm){d.dataset.confirm=1;d.textContent='Sure?';d.style.color='var(--danger)';toast('This rate is used on the current invoice — click again to delete');return;}
+  rates.splice(+d.dataset.rdel,1);renderRates();persist();
+});
+document.getElementById('addRate').onclick=()=>{rates.push({id:'r'+uid(),service:'Drop-in',details:'New option',unit:'per visit',rate:0,hol:10});renderRates();persist();};
+document.getElementById('resetRates').onclick=e=>{
+  const b=e.currentTarget; if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent='Click again to reset';setTimeout(()=>{b.dataset.confirm='';b.textContent='Reset to spreadsheet rates'},3000);return;}
+  rates=structuredClone(DEFAULT_RATES);renderRates();persist();toast('Rates reset');b.dataset.confirm='';b.textContent='Reset to spreadsheet rates';
+};
+
+document.getElementById('saveBtn').onclick=()=>{
+  if(!inv.number) inv.number=nextNumber();
+  const copy=structuredClone(inv); copy.savedAt=Date.now();
+  const i=saved.findIndex(s=>s.id===inv.id); if(i>=0) saved[i]=copy; else saved.push(copy);
+  persist();renderFields();renderPaper();toast('Invoice saved');
+};
+document.getElementById('newBtn').onclick=()=>{inv=blankInvoice();persist();renderAll();document.querySelector('nav.tabs [data-view=invoice]').click();toast('New invoice started');};
+document.getElementById('savedList').addEventListener('click',e=>{
+  const o=e.target.closest('[data-open]'), d=e.target.closest('[data-sdel]');
+  if(o){inv=structuredClone(saved.find(s=>s.id===o.dataset.open));persist();renderAll();document.querySelector('nav.tabs [data-view=invoice]').click();}
+  if(d){if(!d.dataset.confirm){d.dataset.confirm=1;d.textContent='Sure?';return;} saved=saved.filter(s=>s.id!==d.dataset.sdel);persist();renderSaved();}
+});
+
+/* ---------- export ---------- */
+let downloads=null;
+(async()=>{try{if(window.claude&&claude.use) downloads=await claude.use('downloads');}catch(e){}})();
+
+function fileBase(){return ('Invoice '+(inv.number||'')+' '+(inv.client||'')).trim().replace(/[\\/:*?"<>|@]+/g,'-').replace(/\s+/g,' ');}
+async function renderCanvas(){
+  const stage=document.getElementById('exportStage');
+  stage.innerHTML=`<div class="paper">${paperHTML(inv)}</div>`;
+  try{await document.fonts.ready;}catch(e){}
+  const c=await html2canvas(stage.firstElementChild,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+  stage.innerHTML=''; return c;
+}
+async function deliver(blob,filename,kind){
+  if(downloads){
+    try{await downloads.save({filename,data:blob});toast(kind+' saved');return;}
+    catch(err){if(err&&err.code==='declined'){toast('Download cancelled');return;} if(err&&err.code==='rate_limited'){toast('Please wait a moment and try again');return;}}
+  }
+  // fallback: browser download (works when the page is opened outside the sandboxed viewer)
+  const url=URL.createObjectURL(blob);
+  try{const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();}catch(e){}
+  if(kind==='Image'){showImage(url,'Image ready');}
+  else toast('If the download didn’t start, try “Export JPG” instead');
+}
+function showImage(url,title){
+  document.getElementById('imgModalImg').src=url;
+  document.getElementById('imgModalTitle').textContent=title;
+  document.getElementById('imgModal').classList.add('on');
+}
+document.getElementById('closeModal').onclick=()=>document.getElementById('imgModal').classList.remove('on');
+document.getElementById('imgModal').onclick=e=>{if(e.target.id==='imgModal')e.currentTarget.classList.remove('on')};
+
+async function busy(btn,fn){const t=btn.innerHTML;btn.disabled=true;btn.innerHTML='Preparing…';try{await fn();}catch(e){console.error(e);toast('Export failed — '+(e.message||e));}finally{btn.disabled=false;btn.innerHTML=t;}}
+
+document.getElementById('pngBtn').onclick=e=>busy(e.currentTarget,async()=>{
+  const c=await renderCanvas();
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.92));
+  await deliver(blob,fileBase()+'.jpg','Image');
+});
+document.getElementById('pdfBtn').onclick=e=>busy(e.currentTarget,async()=>{
+  const c=await renderCanvas();
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
+  const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+  const imgH=c.height*pw/c.width;
+  if(imgH<=ph){pdf.addImage(c.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,imgH);}
+  else{ // split long invoices across pages
+    const sliceH=Math.floor(c.width*ph/pw); let y=0, first=true;
+    while(y<c.height){
+      const h=Math.min(sliceH,c.height-y), part=document.createElement('canvas');
+      part.width=c.width; part.height=h; const ctx=part.getContext('2d'); ctx.fillStyle='#fff';ctx.fillRect(0,0,part.width,h);
+      ctx.drawImage(c,0,y,c.width,h,0,0,c.width,h);
+      if(!first) pdf.addPage(); pdf.addImage(part.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,h*pw/c.width);
+      y+=h; first=false;
+    }
+  }
+  pdf.setProperties({title:fileBase()});
+  await deliver(pdf.output('blob'),fileBase()+'.pdf','PDF');
+});
+
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2400);}
+
+renderAll();
+</script>
+</body>
+</html>
