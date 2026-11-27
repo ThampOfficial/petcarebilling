@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pet Care Billing</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f5d50">
+<meta name="apple-mobile-web-app-title" content="Pet Billing">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -19,7 +26,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-
 button,input,select,textarea{font:inherit;color:inherit}
 header.top{display:flex;align-items:center;gap:16px;padding:14px 22px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
 .brand{font-family:Fraunces,serif;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
-.brand .paw{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center}
+.brand .paw{width:32px;height:32px;border-radius:9px;display:block}
 nav.tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:10px}
 nav.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:7px;cursor:pointer;font-weight:600;color:var(--muted)}
 nav.tabs button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
@@ -156,7 +163,7 @@ textarea.in{resize:vertical;min-height:84px}
 <body>
 
 <header class="top">
-  <div class="brand"><div class="paw"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><circle cx="5.5" cy="10" r="2.3"/><circle cx="9.5" cy="5.5" r="2.3"/><circle cx="14.5" cy="5.5" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M12 11c-3.3 0-6.5 4.7-6.5 7.2 0 1.8 1.5 2.6 3.2 2.6 1.4 0 2.2-.7 3.3-.7s1.9.7 3.3.7c1.7 0 3.2-.8 3.2-2.6C18.5 15.7 15.3 11 12 11z"/></svg></div>Pet Care Billing</div>
+  <div class="brand"><img class="paw" src="icon.svg" alt="" width="32" height="32">Pet Care Billing</div>
   <nav class="tabs">
     <button data-view="invoice" class="on">Invoice</button>
     <button data-view="rates">Rate catalog</button>

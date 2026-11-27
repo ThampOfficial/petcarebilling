@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a6e5f"/>
+      <stop offset="1" stop-color="#264d42"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(-8 0)">
+  <!-- receipt -->
+  <path d="M136 96h240a16 16 0 0 1 16 16v304l-30-20-30 20-30-20-30 20-30-20-30 20-30-20-30 20V112a16 16 0 0 1 16-16z" fill="#fffdf9"/>
+  <!-- header lines -->
+  <rect x="168" y="132" width="120" height="16" rx="8" fill="#2f5d50"/>
+  <rect x="168" y="162" width="76" height="12" rx="6" fill="#d9d1c2"/>
+  <!-- paw -->
+  <g fill="#c9773b">
+    <ellipse cx="208" cy="240" rx="17" ry="21"/>
+    <ellipse cx="244" cy="214" rx="17" ry="22"/>
+    <ellipse cx="284" cy="214" rx="17" ry="22"/>
+    <ellipse cx="320" cy="240" rx="17" ry="21"/>
+    <path d="M264 252c-28 0-58 34-58 56 0 15 12 22 26 22 12 0 19-6 32-6s20 6 32 6c14 0 26-7 26-22 0-22-30-56-58-56z"/>
+  </g>
+  <!-- total line -->
+  <rect x="168" y="352" width="72" height="12" rx="6" fill="#d9d1c2"/>
+  <rect x="272" y="346" width="72" height="22" rx="11" fill="#2f5d50"/>
+  </g>
+</svg>
